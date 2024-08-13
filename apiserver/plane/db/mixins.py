@@ -3,7 +3,6 @@
 # Django imports
 from django.db import models
 
-
 class TimeAuditModel(models.Model):
     """To path when the record was created and last modified"""
 
@@ -17,7 +16,6 @@ class TimeAuditModel(models.Model):
 
     class Meta:
         abstract = True
-
 
 class UserAuditModel(models.Model):
     """To path when the record was created and last modified"""

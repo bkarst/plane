@@ -105,6 +105,8 @@ from .asset.base import FileAssetEndpoint, UserAssetsEndpoint, FileAssetViewSet
 from .issue.base import (
     IssueListEndpoint,
     IssueViewSet,
+    RagIssueListEndpoint,
+    RagIssueViewSet,
     IssueUserDisplayPropertyEndpoint,
     BulkDeleteIssuesEndpoint,
 )

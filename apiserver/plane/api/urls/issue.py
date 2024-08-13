@@ -6,6 +6,7 @@ from plane.api.views import (
     IssueLinkAPIEndpoint,
     IssueCommentAPIEndpoint,
     IssueActivityAPIEndpoint,
+    RagIssueAPIEndpoint,
     WorkspaceIssueAPIEndpoint,
 )
 
@@ -18,6 +19,11 @@ urlpatterns = [
     path(
         "workspaces/<str:slug>/projects/<uuid:project_id>/issues/",
         IssueAPIEndpoint.as_view(),
+        name="issue",
+    ),
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/rag-issues/",
+        RagIssueAPIEndpoint.as_view(),
         name="issue",
     ),
     path(

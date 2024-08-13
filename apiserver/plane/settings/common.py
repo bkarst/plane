@@ -19,12 +19,13 @@ from sentry_sdk.integrations.redis import RedisIntegration
 from corsheaders.defaults import default_headers
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
+DATABASE_URL='postgresql://postgres@localhost:5433/plane_db'
 # Secret Key
 SECRET_KEY = os.environ.get("SECRET_KEY", get_random_secret_key())
 
+DEBUG=1
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = int(os.environ.get("DEBUG", "0"))
+# DEBUG = int(os.environ.get("DEBUG", "0"))
 
 # Allowed Hosts
 ALLOWED_HOSTS = ["*"]
@@ -112,6 +113,8 @@ TEMPLATES = [
 
 # CORS Settings
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS=["http://localhost:3000", "https://localhost:3000", "http://0.0.0.0:3000", "https://0.0.0.0:3000"]
+CSRF_TRUSTED_ORIGINS=["http://localhost:3000", "https://localhost:3000", "http://0.0.0.0:3000"]
 cors_origins_raw = os.environ.get("CORS_ALLOWED_ORIGINS", "")
 # filter out empty strings
 cors_allowed_origins = [
@@ -141,7 +144,7 @@ SITE_ID = 1
 AUTH_USER_MODEL = "db.User"
 
 # Database
-if bool(os.environ.get("DATABASE_URL")):
+if bool(DATABASE_URL):
     # Parse database configuration from $DATABASE_URL
     DATABASES = {
         "default": dj_database_url.config(),
@@ -267,6 +270,8 @@ if REDIS_SSL:
 else:
     CELERY_BROKER_URL = REDIS_URL
 
+CELERY_BROKER_URL = REDIS_URL
+
 CELERY_IMPORTS = (
     # scheduled tasks
     "plane.bgtasks.issue_automation_task",
@@ -277,6 +282,8 @@ CELERY_IMPORTS = (
     # management tasks
     "plane.bgtasks.dummy_data_task",
 )
+
+# celery -A dummy_data_task worker -l info 
 
 # Sentry Settings
 # Enable Sentry Settings

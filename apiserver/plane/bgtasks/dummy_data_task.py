@@ -1,6 +1,7 @@
 # Python imports
 import uuid
 import random
+import os
 from datetime import datetime, timedelta
 
 # Django imports
@@ -588,11 +589,14 @@ def create_dummy_data(
     pages_count,
     inbox_issue_count,
 ):
+    
+    
     workspace = Workspace.objects.get(slug=slug)
-
+    print("getting workspaces")
     user = User.objects.get(email=email)
     user_id = user.id
-
+    print("found user")
+    print(user.id)
     # Create a project
     project = create_project(workspace=workspace, user_id=user_id)
 

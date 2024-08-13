@@ -261,7 +261,7 @@ export const SIDEBAR_WORKSPACE_MENU_ITEMS: {
 }[] = [
   {
     key: "all-issues",
-    label: "All Issues",
+    label: "All Issues2",
     href: `/workspace-views/all-issues`,
     access: EUserWorkspaceRoles.GUEST,
     highlight: (pathname: string, baseUrl: string) => pathname.includes(`${baseUrl}/workspace-views/`),

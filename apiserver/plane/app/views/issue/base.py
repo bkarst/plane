@@ -1,5 +1,7 @@
 # Python imports
 import json
+import csv
+from io import StringIO
 
 # Django imports
 from django.contrib.postgres.aggregates import ArrayAgg
@@ -38,6 +40,8 @@ from plane.app.serializers import (
 from plane.bgtasks.issue_activites_task import issue_activity
 from plane.db.models import (
     Issue,
+    User,
+    IssueAssignee,
     IssueAttachment,
     IssueLink,
     IssueProperty,
@@ -60,6 +64,241 @@ from .. import BaseAPIView, BaseViewSet
 from plane.utils.user_timezone_converter import user_timezone_converter
 
 # Module imports
+
+
+class RagIssueViewSet(BaseViewSet):
+    def get_serializer_class(self):
+        return (
+            IssueCreateSerializer
+            if self.action in ["create", "update", "partial_update"]
+            else IssueSerializer
+        )
+
+    model = Issue
+    webhook_event = "issue"
+    permission_classes = [
+        ProjectEntityPermission,
+    ]
+
+    search_fields = [
+        "name",
+    ]
+
+    filterset_fields = [
+        "state__name",
+        "assignees__id",
+        "workspace__id",
+    ]
+
+    def get_queryset(self):
+        return (
+            Issue.issue_objects.filter(
+                project_id=self.kwargs.get("project_id")
+            )
+            .filter(workspace__slug=self.kwargs.get("slug"))
+            .select_related("workspace", "project", "state", "parent")
+            .prefetch_related("assignees", "labels", "issue_module__module")
+            .annotate(cycle_id=F("issue_cycle__cycle_id"))
+            .annotate(
+                link_count=IssueLink.objects.filter(issue=OuterRef("id"))
+                .order_by()
+                .annotate(count=Func(F("id"), function="Count"))
+                .values("count")
+            )
+            .annotate(
+                attachment_count=IssueAttachment.objects.filter(
+                    issue=OuterRef("id")
+                )
+                .order_by()
+                .annotate(count=Func(F("id"), function="Count"))
+                .values("count")
+            )
+            .annotate(
+                sub_issues_count=Issue.issue_objects.filter(
+                    parent=OuterRef("id")
+                )
+                .order_by()
+                .annotate(count=Func(F("id"), function="Count"))
+                .values("count")
+            )
+        ).distinct()
+
+    @method_decorator(gzip_page)
+    def list(self, request, slug, project_id):
+        filters = issue_filters(request.query_params, "GET")
+        order_by_param = request.GET.get("order_by", "-created_at")
+
+        issue_queryset = self.get_queryset().filter(**filters)
+        # Custom ordering for priority and state
+
+        # Issue queryset
+        issue_queryset, order_by_param = order_issue_queryset(
+            issue_queryset=issue_queryset,
+            order_by_param=order_by_param,
+        )
+
+        # Group by
+        group_by = request.GET.get("group_by", False)
+        sub_group_by = request.GET.get("sub_group_by", False)
+
+        # issue queryset
+        issue_queryset = issue_queryset_grouper(
+            queryset=issue_queryset,
+            group_by=group_by,
+            sub_group_by=sub_group_by,
+        )
+
+        if group_by:
+            if sub_group_by:
+                if group_by == sub_group_by:
+                    return Response(
+                        {
+                            "error": "Group by and sub group by cannot have same parameters"
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                else:
+                    return self.paginate(
+                        request=request,
+                        order_by=order_by_param,
+                        queryset=issue_queryset,
+                        on_results=lambda issues: issue_on_results(
+                            group_by=group_by,
+                            issues=issues,
+                            sub_group_by=sub_group_by,
+                        ),
+                        paginator_cls=SubGroupedOffsetPaginator,
+                        group_by_fields=issue_group_values(
+                            field=group_by,
+                            slug=slug,
+                            project_id=project_id,
+                            filters=filters,
+                        ),
+                        sub_group_by_fields=issue_group_values(
+                            field=sub_group_by,
+                            slug=slug,
+                            project_id=project_id,
+                            filters=filters,
+                        ),
+                        group_by_field_name=group_by,
+                        sub_group_by_field_name=sub_group_by,
+                        count_filter=Q(
+                            Q(issue_inbox__status=1)
+                            | Q(issue_inbox__status=-1)
+                            | Q(issue_inbox__status=2)
+                            | Q(issue_inbox__isnull=True),
+                            archived_at__isnull=True,
+                            is_draft=False,
+                        ),
+                    )
+            else:
+                # Group paginate
+                return self.paginate(
+                    request=request,
+                    order_by=order_by_param,
+                    queryset=issue_queryset,
+                    on_results=lambda issues: issue_on_results(
+                        group_by=group_by,
+                        issues=issues,
+                        sub_group_by=sub_group_by,
+                    ),
+                    paginator_cls=GroupedOffsetPaginator,
+                    group_by_fields=issue_group_values(
+                        field=group_by,
+                        slug=slug,
+                        project_id=project_id,
+                        filters=filters,
+                    ),
+                    group_by_field_name=group_by,
+                    count_filter=Q(
+                        Q(issue_inbox__status=1)
+                        | Q(issue_inbox__status=-1)
+                        | Q(issue_inbox__status=2)
+                        | Q(issue_inbox__isnull=True),
+                        archived_at__isnull=True,
+                        is_draft=False,
+                    ),
+                )
+        else:
+            return self.paginate(
+                order_by=order_by_param,
+                request=request,
+                queryset=issue_queryset,
+                on_results=lambda issues: issue_on_results(
+                    group_by=group_by, issues=issues, sub_group_by=sub_group_by
+                ),
+            )
+
+    def retrieve(self, request, slug, project_id, pk=None):
+        issue = (
+            self.get_queryset()
+            .filter(pk=pk)
+            .annotate(
+                label_ids=Coalesce(
+                    ArrayAgg(
+                        "labels__id",
+                        distinct=True,
+                        filter=~Q(labels__id__isnull=True),
+                    ),
+                    Value([], output_field=ArrayField(UUIDField())),
+                ),
+                assignee_ids=Coalesce(
+                    ArrayAgg(
+                        "assignees__id",
+                        distinct=True,
+                        filter=~Q(assignees__id__isnull=True)
+                        & Q(assignees__member_project__is_active=True),
+                    ),
+                    Value([], output_field=ArrayField(UUIDField())),
+                ),
+                module_ids=Coalesce(
+                    ArrayAgg(
+                        "issue_module__module_id",
+                        distinct=True,
+                        filter=~Q(issue_module__module_id__isnull=True),
+                    ),
+                    Value([], output_field=ArrayField(UUIDField())),
+                ),
+            )
+            .prefetch_related(
+                Prefetch(
+                    "issue_reactions",
+                    queryset=IssueReaction.objects.select_related(
+                        "issue", "actor"
+                    ),
+                )
+            )
+            .prefetch_related(
+                Prefetch(
+                    "issue_attachment",
+                    queryset=IssueAttachment.objects.select_related("issue"),
+                )
+            )
+            .prefetch_related(
+                Prefetch(
+                    "issue_link",
+                    queryset=IssueLink.objects.select_related("created_by"),
+                )
+            )
+            .annotate(
+                is_subscribed=Exists(
+                    IssueSubscriber.objects.filter(
+                        workspace__slug=slug,
+                        project_id=project_id,
+                        issue_id=OuterRef("pk"),
+                        subscriber=request.user,
+                    )
+                )
+            )
+        ).first()
+        if not issue:
+            return Response(
+                {"error": "The required object does not exist."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = IssueDetailSerializer(issue, expand=self.expand)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class IssueListEndpoint(BaseAPIView):
@@ -171,6 +410,136 @@ class IssueListEndpoint(BaseAPIView):
                 issues, datetime_fields, request.user.user_timezone
             )
         return Response(issues, status=status.HTTP_200_OK)
+
+class RagIssueListEndpoint(BaseAPIView):
+
+    permission_classes = [
+        ProjectEntityPermission,
+    ]
+
+    def get(self, request, slug, project_id):
+
+        queryset = (
+            Issue.issue_objects.filter(
+                workspace__slug=slug, project_id=project_id
+            )
+            .filter(workspace__slug=self.kwargs.get("slug"))
+            .select_related("workspace", "project", "state", "parent")
+            .prefetch_related("assignees", "labels", "issue_module__module")
+            .annotate(cycle_id=F("issue_cycle__cycle_id"))
+            .annotate(
+                link_count=IssueLink.objects.filter(issue=OuterRef("id"))
+                .order_by()
+                .annotate(count=Func(F("id"), function="Count"))
+                .values("count")
+            )
+            .annotate(
+                attachment_count=IssueAttachment.objects.filter(
+                    issue=OuterRef("id")
+                )
+                .order_by()
+                .annotate(count=Func(F("id"), function="Count"))
+                .values("count")
+            )
+            .annotate(
+                sub_issues_count=Issue.issue_objects.filter(
+                    parent=OuterRef("id")
+                )
+                .order_by()
+                .annotate(count=Func(F("id"), function="Count"))
+                .values("count")
+            )
+        ).distinct()
+
+        filters = issue_filters(request.query_params, "GET")
+
+        order_by_param = request.GET.get("order_by", "-created_at")
+        issue_queryset = queryset.filter(**filters)
+        # Issue queryset
+        issue_queryset, _ = order_issue_queryset(
+            issue_queryset=issue_queryset,
+            order_by_param=order_by_param,
+        )
+
+        # Group by
+        group_by = request.GET.get("group_by", False)
+        sub_group_by = request.GET.get("sub_group_by", False)
+
+        # issue queryset
+        issue_queryset = issue_queryset_grouper(
+            queryset=issue_queryset,
+            group_by=group_by,
+            sub_group_by=sub_group_by,
+        )
+
+        if self.fields or self.expand:
+            issues = IssueSerializer(
+                queryset, many=True, fields=self.fields, expand=self.expand
+            ).data
+        else:
+            issues = issue_queryset.values(
+                "id",
+                "issue_assignee",
+                "description_stripped",
+                "name",
+                "state_id",
+                "sort_order",
+                "completed_at",
+                "estimate_point",
+                "priority",
+                "start_date",
+                "target_date",
+                "sequence_id",
+                "project_id",
+                "parent_id",
+                "cycle_id",
+                "module_ids",
+                "label_ids",
+                "assignee_ids",
+                "sub_issues_count",
+                "created_at",
+                "updated_at",
+                "created_by",
+                "updated_by",
+                "attachment_count",
+                "link_count",
+                "is_draft",
+                "archived_at",
+            )
+            datetime_fields = ["created_at", "updated_at"]
+            issues = user_timezone_converter(
+                issues, datetime_fields, request.user.user_timezone
+            )
+        csv_buffer = StringIO()
+    
+        if issues:
+            # Create a CSV writer
+            writer = csv.DictWriter(csv_buffer, fieldnames=issues[0].keys())
+
+            # Write the header
+            writer.writeheader()
+
+            # Write the data
+            for issue in issues:
+                print("")
+                # print(issue[""])
+                print(issue["description_stripped"])
+                my_uuid = str(issue["issue_assignee"])
+                print(my_uuid)
+                assignee = IssueAssignee.objects.all().filter(id=my_uuid)
+                my_user_id = assignee.first().assignee.id
+                user = User.objects.all().filter(id=my_user_id)
+                print(user.first().first_name)
+                print(user.first().last_name)
+                writer.writerow(issue)
+
+        # Get the CSV string
+        csv_string = csv_buffer.getvalue()
+
+        # Close the StringIO buffer
+        csv_buffer.close()
+
+        return Response({"issues": issues, "csv_string": csv_string}, status=status.HTTP_200_OK)
 
 
 class IssueViewSet(BaseViewSet):

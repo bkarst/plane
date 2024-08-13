@@ -3,6 +3,7 @@ from django.urls import path
 from plane.app.views import (
     BulkCreateIssueLabelsEndpoint,
     BulkDeleteIssuesEndpoint,
+    RagIssueViewSet,
     SubIssuesEndpoint,
     IssueLinkViewSet,
     IssueAttachmentEndpoint,
@@ -16,6 +17,7 @@ from plane.app.views import (
     IssueReactionViewSet,
     IssueRelationViewSet,
     IssueSubscriberViewSet,
+    RagIssueListEndpoint,
     IssueUserDisplayPropertyEndpoint,
     IssueViewSet,
     LabelViewSet,
@@ -30,8 +32,23 @@ urlpatterns = [
         name="project-issue",
     ),
     path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/issues/rag-list/",
+        RagIssueListEndpoint.as_view(),
+        name="project-issue",
+    ),
+    path(
         "workspaces/<str:slug>/projects/<uuid:project_id>/issues/",
         IssueViewSet.as_view(
+            {
+                "get": "list",
+                "post": "create",
+            }
+        ),
+        name="project-issue",
+    ),
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/rag-issues/",
+        RagIssueViewSet.as_view(
             {
                 "get": "list",
                 "post": "create",

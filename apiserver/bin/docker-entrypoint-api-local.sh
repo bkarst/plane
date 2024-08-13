@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
-python manage.py wait_for_db
+python manage.py wait_for_db --settings=plane.settings.local
 # Wait for migrations
-python manage.py wait_for_migrations
+python manage.py wait_for_migrations --settings=plane.settings.local
 
 # Create the default bucket
 #!/bin/bash
@@ -21,15 +21,14 @@ SIGNATURE=$(echo "$HOSTNAME$MAC_ADDRESS$CPU_INFO$MEMORY_INFO$DISK_INFO" | sha256
 export MACHINE_SIGNATURE=$SIGNATURE
 
 # Register instance
-python manage.py register_instance "$MACHINE_SIGNATURE"
+python manage.py register_instance "$MACHINE_SIGNATURE" --settings=plane.settings.local
 # Load the configuration variable
-python manage.py configure_instance
+python manage.py configure_instance --settings=plane.settings.local
 
 # Create the default bucket
-python manage.py create_bucket
+python manage.py create_bucket --settings=plane.settings.local
 
 # Clear Cache before starting to remove stale values
-python manage.py clear_cache
+python manage.py clear_cache --settings=plane.settings.local
 
 python manage.py runserver 0.0.0.0:8000 --settings=plane.settings.local
-

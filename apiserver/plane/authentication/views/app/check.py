@@ -36,7 +36,10 @@ class EmailCheckEndpoint(APIView):
 
     def post(self, request):
         # Check instance configuration
+        print("instance0")
         instance = Instance.objects.first()
+        print("instance")
+        print(instance)
         if instance is None or not instance.is_setup_done:
             exc = AuthenticationException(
                 error_code=AUTHENTICATION_ERROR_CODES[

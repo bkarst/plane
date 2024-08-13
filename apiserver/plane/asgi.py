@@ -10,6 +10,8 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "plane.settings.production")
 # Initialize Django ASGI application early to ensure the AppRegistry
 # is populated before importing code that may import ORM models.
 
+print("REDIS_HOST")
+print(os.environ.get("REDIS_HOST"))
 
 application = ProtocolTypeRouter(
     {

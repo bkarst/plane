@@ -92,6 +92,8 @@ services:
       dockerfile: Dockerfile.dev
       args:
         DOCKER_BUILDKIT: 1
+    ports: 
+        - "8000:8000"
     restart: unless-stopped
     networks:
       - dev_env

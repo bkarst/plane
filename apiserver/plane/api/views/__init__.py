@@ -5,6 +5,7 @@ from .state import StateAPIEndpoint
 from .issue import (
     WorkspaceIssueAPIEndpoint,
     IssueAPIEndpoint,
+    RagIssueAPIEndpoint,
     LabelAPIEndpoint,
     IssueLinkAPIEndpoint,
     IssueCommentAPIEndpoint,

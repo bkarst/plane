@@ -21,6 +21,9 @@ from plane.authentication.adapter.error import (
 from django.middleware.csrf import get_token
 from plane.utils.cache import invalidate_cache
 from plane.authentication.utils.host import base_host
+from plane.db.models.workspace import Workspace
+from plane.db.models.issue import Issue
+from plane.db.models.user import User
 
 class CSRFTokenEndpoint(APIView):
 
@@ -32,6 +35,85 @@ class CSRFTokenEndpoint(APIView):
         # Generate a CSRF token
         csrf_token = get_token(request)
         # Return the CSRF token in a JSON response
+        # w = User()
+        # w.email = "ben.karst@gmail.com"
+        # w.first_name = "Ben"
+        # w.last_name = "Karst"
+        # w.display_name = "Ben Karst"
+        # w.is_superuser = True
+        # w.is_active = True
+        # w.save()
+
+
+
+
+
+
+
+
+# username = models.CharField(max_length=128, unique=True)
+#     # user fields
+#     mobile_number = models.CharField(max_length=255, blank=True, null=True)
+#     email = models.CharField(
+#         max_length=255, null=True, blank=True, unique=True
+#     )
+
+#     # identity
+#     display_name = models.CharField(max_length=255, default="")
+#     first_name = models.CharField(max_length=255, blank=True)
+#     last_name = models.CharField(max_length=255, blank=True)
+#     avatar = models.TextField(blank=True)
+#     cover_image = models.URLField(blank=True, null=True, max_length=800)
+
+#     # tracking metrics
+#     date_joined = models.DateTimeField(
+#         auto_now_add=True, verbose_name="Created At"
+#     )
+#     created_at = models.DateTimeField(
+#         auto_now_add=True, verbose_name="Created At"
+#     )
+#     updated_at = models.DateTimeField(
+#         auto_now=True, verbose_name="Last Modified At"
+#     )
+#     last_location = models.CharField(max_length=255, blank=True)
+#     created_location = models.CharField(max_length=255, blank=True)
+
+#     # the is' es
+#     is_superuser = models.BooleanField(default=False)
+#     is_managed = models.BooleanField(default=False)
+#     is_password_expired = models.BooleanField(default=False)
+#     is_active = models.BooleanField(default=True)
+#     is_staff = models.BooleanField(default=False)
+#     is_email_verified = models.BooleanField(default=False)
+#     is_password_autoset = models.BooleanField(default=False)
+
+#     # random token generated
+#     token = models.CharField(max_length=64, blank=True)
+
+#     last_active = models.DateTimeField(default=timezone.now, null=True)
+#     last_login_time = models.DateTimeField(null=True)
+#     last_logout_time = models.DateTimeField(null=True)
+#     last_login_ip = models.CharField(max_length=255, blank=True)
+#     last_logout_ip = models.CharField(max_length=255, blank=True)
+#     last_login_medium = models.CharField(
+#         max_length=20,
+#         default="email",
+#     )
+#     last_login_uagent = models.TextField(blank=True)
+#     token_updated_at = models.DateTimeField(null=True)
+#     # my_issues_prop = models.JSONField(null=True)
+
+#     is_bot = models.BooleanField(default=False)
+
+        print('hello')
+        all_workspaces = Workspace.objects.all()
+        # workspace = Workspace.objects.get(slug=slug)
+        all_issues = Issue.objects.filter()
+
+        print(all_workspaces.count())
+        print(all_issues.count())
+        for workspace in all_workspaces:
+            print(workspace)
         return Response(
             {"csrf_token": str(csrf_token)}, status=status.HTTP_200_OK
         )
