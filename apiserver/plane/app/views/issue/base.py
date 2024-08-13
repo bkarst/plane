@@ -510,6 +510,19 @@ class RagIssueListEndpoint(BaseAPIView):
             issues = user_timezone_converter(
                 issues, datetime_fields, request.user.user_timezone
             )
+            print(issues)
+            for issue in issues:
+                print(issue["description_stripped"])
+                my_uuid = str(issue["issue_assignee"])
+                print(my_uuid)
+                assignee = IssueAssignee.objects.all().filter(id=my_uuid)
+                my_user_id = assignee.first().assignee.id
+                user = User.objects.all().filter(id=my_user_id).first()
+                first_name = user.first_name
+                last_name = user.last_name
+                full_name = first_name + " " + last_name
+                print(full_name)
+                issue["full_name"] = full_name
         csv_buffer = StringIO()
     
         if issues:
@@ -521,16 +534,6 @@ class RagIssueListEndpoint(BaseAPIView):
 
             # Write the data
             for issue in issues:
-                print("")
-                # print(issue[""])
-                print(issue["description_stripped"])
-                my_uuid = str(issue["issue_assignee"])
-                print(my_uuid)
-                assignee = IssueAssignee.objects.all().filter(id=my_uuid)
-                my_user_id = assignee.first().assignee.id
-                user = User.objects.all().filter(id=my_user_id)
-                print(user.first().first_name)
-                print(user.first().last_name)
                 writer.writerow(issue)
 
         # Get the CSV string
