@@ -2,8 +2,12 @@
 
 # Python imports
 import os
+from dotenv import load_dotenv
+
+import os
 import ssl
 from urllib.parse import urlparse
+from decouple import config
 
 import certifi
 
@@ -18,10 +22,18 @@ from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
 from corsheaders.defaults import default_headers
 
+
+OPENAI_API_KEY = config('OPENAI_API_KEY')
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATABASE_URL='postgresql://postgres@localhost:5433/plane_db'
 # Secret Key
 SECRET_KEY = os.environ.get("SECRET_KEY", get_random_secret_key())
+# OPENAI_API_KEY = 'os.environ.get("OPENAI_API_KEY")'
+# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "openai-api-key")
+print("OPENAI_API_KEY")
+print(OPENAI_API_KEY)
+
+
 
 DEBUG=1
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -243,6 +255,7 @@ STORAGES["default"] = {
     "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
 }
 AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID", "access-key")
+
 AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", "secret-key")
 AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_S3_BUCKET_NAME", "uploads")
 AWS_REGION = os.environ.get("AWS_REGION", "")

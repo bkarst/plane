@@ -1,8 +1,15 @@
 # Python imports
+from dotenv import load_dotenv
+from dotenv import dotenv_values
+import os
+from openai import OpenAI
+
+
 import json
 import csv
 from io import StringIO
-
+import os
+from django.conf import settings
 # Django imports
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.contrib.postgres.fields import ArrayField
@@ -63,6 +70,8 @@ from plane.utils.paginator import (
 from .. import BaseAPIView, BaseViewSet
 from plane.utils.user_timezone_converter import user_timezone_converter
 
+load_dotenv()
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
 # Module imports
 
 
@@ -136,6 +145,7 @@ class RagIssueViewSet(BaseViewSet):
             issue_queryset=issue_queryset,
             order_by_param=order_by_param,
         )
+        
 
         # Group by
         group_by = request.GET.get("group_by", False)
@@ -291,6 +301,8 @@ class RagIssueViewSet(BaseViewSet):
                 )
             )
         ).first()
+
+
         if not issue:
             return Response(
                 {"error": "The required object does not exist."},
@@ -418,7 +430,7 @@ class RagIssueListEndpoint(BaseAPIView):
     ]
 
     def get(self, request, slug, project_id):
-
+        
         queryset = (
             Issue.issue_objects.filter(
                 workspace__slug=slug, project_id=project_id
@@ -538,9 +550,20 @@ class RagIssueListEndpoint(BaseAPIView):
 
         # Get the CSV string
         csv_string = csv_buffer.getvalue()
-
-        # Close the StringIO buffer
+        print("settings.OPENAI_API_KEY")
+        print(settings.OPENAI_API_KEY)
         csv_buffer.close()
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": "Who won the world series in 2020?"},
+                {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
+                {"role": "user", "content": "Where was it played?"}
+            ]
+        )
+        # Close the StringIO buffer
+        
 
         return Response({"issues": issues, "csv_string": csv_string}, status=status.HTTP_200_OK)
 
