@@ -60,7 +60,6 @@ const OnboardingPage = observer(() => {
         ...steps,
       },
     };
-
     await updateUserProfile(payload);
   };
 

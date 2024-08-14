@@ -62,7 +62,8 @@ export const AuthPasswordForm: React.FC<Props> = observer((props: Props) => {
   const [isPasswordInputFocused, setIsPasswordInputFocused] = useState(false);
   const [isRetryPasswordInputFocused, setIsRetryPasswordInputFocused] = useState(false);
   const [isBannerMessage, setBannerMessage] = useState(false);
-
+  console.log('csrfToken')
+  console.log(csrfToken)
   const handleShowPassword = (key: keyof typeof showPassword) =>
     setShowPassword((prev) => ({ ...prev, [key]: !prev[key] }));
 
@@ -152,6 +153,7 @@ export const AuthPasswordForm: React.FC<Props> = observer((props: Props) => {
         onError={() => setIsSubmitting(false)}
       >
         <input type="hidden" name="csrfmiddlewaretoken" value={csrfToken} />
+        <input type="hidden" name="csrftoken" value={csrfToken} />
         <input type="hidden" value={passwordFormData.email} name="email" />
         {nextPath && <input type="hidden" value={nextPath} name="next_path" />}
         <div className="space-y-1">

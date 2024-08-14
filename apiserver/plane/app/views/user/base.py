@@ -48,6 +48,9 @@ class UserEndpoint(BaseViewSet):
 
     @cache_response(60 * 60)
     def retrieve(self, request):
+        print('request.user')
+        print('request.user')
+        print(request.user)
         serialized_data = UserMeSerializer(request.user).data
         return Response(
             serialized_data,

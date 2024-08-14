@@ -61,7 +61,10 @@ export const InstanceSignInForm: FC = (props) => {
 
   useEffect(() => {
     if (csrfToken === undefined)
-      authService.requestCSRFToken().then((data) => data?.csrf_token && setCsrfToken(data.csrf_token));
+      authService.requestCSRFToken().then((data) => {
+        console.log(data)
+        data?.csrf_token && setCsrfToken(data.csrf_token)
+     });
   }, [csrfToken]);
 
   useEffect(() => {

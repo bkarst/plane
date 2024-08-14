@@ -1,3 +1,15 @@
+add some test data to the account. Maybe make it automated. 
+
+curl 'http://0.0.0.0:3000/polygen34234/projects/c24aa683-94be-4bce-bcbd-f9429c6f1bf4/issues/' \
+  -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7' \
+  -H 'Accept-Language: en-US,en;q=0.9' \
+  -H 'Cache-Control: max-age=0' \
+  -H 'Connection: keep-alive' \
+  -H 'Cookie: csrftoken=GYyL5INZS9W67C7IEkLB0EFKGCo6zXAj; plane-session-id=fggydip8sforykuj1jv6x2r2zfue6myxjhq63w0dsf0ig57r6y0dd9txm7nj24of2noqhvq6ip57k84i865ateenffbvopxpxlchf7wnlc4w6izsvhhvmyen37m1wehp' \
+  -H 'Upgrade-Insecure-Requests: 1' \
+  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36' \
+  --insecure
+
 curl 'http://0.0.0.0:8000/api/workspaces/polygen/projects/3a88eb36-1c68-41ff-8016-6c39e9d23f11/issues2/?group_by=state_id&order_by=-created_at&sub_issue=true&cursor=30:0:0&per_page=30' \
   -H 'Accept: application/json, text/plain, */*' \
   -H 'Accept-Language: en-US,en;q=0.9' \

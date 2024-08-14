@@ -13,14 +13,15 @@ MIDDLEWARE += ("debug_toolbar.middleware.DebugToolbarMiddleware",)  # noqa
 REDIS_HOST="127.0.0.1"
 
 REDIS_PORT="6379"
-REDIS_URL="redis://127.0.0.1:6379/"
+#REDIS_URL="redis://127.0.0.1:6379/"
+REDIS_URL="redis://plane-redis:6379/"
 DATABASE_URL='postgresql://postgres@localhost:5433/plane_db'
 REDIS_SSL = REDIS_URL and "rediss" in REDIS_URL
 DEBUG_TOOLBAR_PATCH_SETTINGS = False
 SECRET_KEY="60gp0byfz2dvffa45cxl20p1scy9xbpf6d8c5y0geejgkyp1b5"
 # Only show emails in console don't send it to smtp
-CORS_ALLOWED_ORIGINS=["http://localhost:3000", "https://localhost:3000", "http://0.0.0.0:3000"]
-CSRF_TRUSTED_ORIGINS=["http://localhost:3000", "https://localhost:3000", "http://0.0.0.0:3000"]
+CORS_ALLOWED_ORIGINS=["http://localhost:3000", "http://localhost", "https://localhost:3000", "http://0.0.0.0:3000"]
+CSRF_TRUSTED_ORIGINS=["http://localhost:3000", "http://localhost", "https://localhost:3000", "http://0.0.0.0:3000"]
 EMAIL_BACKEND = os.environ.get(
     "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
 )

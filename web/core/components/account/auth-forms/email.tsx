@@ -1,6 +1,6 @@
 "use client";
 
-import { FC, FormEvent, useMemo, useState } from "react";
+import { FC, FormEvent, useEffect, useMemo, useState } from "react";
 import { observer } from "mobx-react";
 // icons
 import { CircleAlert, XCircle } from "lucide-react";
@@ -11,11 +11,14 @@ import { Button, Input, Spinner } from "@plane/ui";
 // helpers
 import { cn } from "@/helpers/common.helper";
 import { checkEmailValidity } from "@/helpers/string.helper";
+import { AuthService } from "@/services/auth.service";
 
 type TAuthEmailForm = {
   defaultEmail: string;
   onSubmit: (data: IEmailCheckData) => Promise<void>;
 };
+
+const authService = new AuthService();
 
 export const AuthEmailForm: FC<TAuthEmailForm> = observer((props) => {
   const { onSubmit, defaultEmail } = props;
@@ -23,11 +26,21 @@ export const AuthEmailForm: FC<TAuthEmailForm> = observer((props) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [email, setEmail] = useState(defaultEmail);
   const [isFocused, setFocused] = useState(false);
-
+  const [csrfToken, setCsrfToken] = useState<string | undefined>(undefined);
   const emailError = useMemo(
     () => (email && !checkEmailValidity(email) ? { email: "Email is invalid" } : undefined),
     [email]
   );
+
+  useEffect(() => {
+    if (csrfToken === undefined)
+      authService.requestCSRFToken().then((data) => {
+        console.log(data)
+        data?.csrf_token && setCsrfToken(data.csrf_token)
+     });
+  }, [csrfToken]);
+
+  
 
   const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

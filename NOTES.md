@@ -1,3 +1,5 @@
+docker-compose up --build
+
 How to develop a backend endpoint. 
 
 Startup front end code in development. 

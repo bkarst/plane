@@ -44,7 +44,7 @@ class BaseViewSet(TimezoneMixin, ModelViewSet, BasePaginator):
     model = None
 
     permission_classes = [
-        IsAuthenticated,
+        # IsAuthenticated,
     ]
 
     filter_backends = (
@@ -164,7 +164,7 @@ class BaseViewSet(TimezoneMixin, ModelViewSet, BasePaginator):
 
 class BaseAPIView(TimezoneMixin, APIView, BasePaginator):
     permission_classes = [
-        IsAuthenticated,
+        # IsAuthenticated,
     ]
 
     filter_backends = (
@@ -199,7 +199,6 @@ class BaseAPIView(TimezoneMixin, APIView, BasePaginator):
                     {"error": "The payload is not valid"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-
             if isinstance(e, ValidationError):
                 return Response(
                     {"error": "Please provide valid detail"},

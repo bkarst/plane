@@ -2,7 +2,6 @@
 
 # Python imports
 import os
-from dotenv import load_dotenv
 
 import os
 import ssl
@@ -30,8 +29,6 @@ DATABASE_URL='postgresql://postgres@localhost:5433/plane_db'
 SECRET_KEY = os.environ.get("SECRET_KEY", get_random_secret_key())
 # OPENAI_API_KEY = 'os.environ.get("OPENAI_API_KEY")'
 # OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "openai-api-key")
-print("OPENAI_API_KEY")
-print(OPENAI_API_KEY)
 
 
 
@@ -66,6 +63,7 @@ INSTALLED_APPS = [
     "storages",
 ]
 
+# SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 # Middlewares
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -125,8 +123,8 @@ TEMPLATES = [
 
 # CORS Settings
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS=["http://localhost:3000", "https://localhost:3000", "http://0.0.0.0:3000", "https://0.0.0.0:3000"]
-CSRF_TRUSTED_ORIGINS=["http://localhost:3000", "https://localhost:3000", "http://0.0.0.0:3000"]
+CORS_ALLOWED_ORIGINS=["http://localhost:3000","http://localhost", "https://localhost:3000", "http://0.0.0.0:3000", "https://0.0.0.0:3000"]
+CSRF_TRUSTED_ORIGINS=["http://localhost:3000", "http://localhost", "https://localhost:3000", "http://0.0.0.0:3000"]
 cors_origins_raw = os.environ.get("CORS_ALLOWED_ORIGINS", "")
 # filter out empty strings
 cors_allowed_origins = [

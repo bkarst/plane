@@ -1,6 +1,4 @@
 # Python imports
-from dotenv import load_dotenv
-from dotenv import dotenv_values
 import os
 from openai import OpenAI
 
@@ -70,10 +68,8 @@ from plane.utils.paginator import (
 from .. import BaseAPIView, BaseViewSet
 from plane.utils.user_timezone_converter import user_timezone_converter
 
-load_dotenv()
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
 # Module imports
-
 
 class RagIssueViewSet(BaseViewSet):
     def get_serializer_class(self):

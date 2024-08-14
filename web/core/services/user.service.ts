@@ -46,7 +46,6 @@ export class UserService extends APIService {
   }
 
   async currentUser(): Promise<IUser> {
-    // Using validateStatus: null to bypass interceptors for unauthorized errors.
     return this.get("/api/users/me/", { validateStatus: null })
       .then((response) => response?.data)
       .catch((error) => {
