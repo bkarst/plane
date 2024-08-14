@@ -7,6 +7,7 @@ from plane.app.views import (
     IssueLinkViewSet,
     IssueAttachmentEndpoint,
     CommentReactionViewSet,
+    RagIssueListEndpoint,
     ExportIssuesEndpoint,
     IssueActivityEndpoint,
     IssueArchiveViewSet,
@@ -27,6 +28,12 @@ urlpatterns = [
     path(
         "workspaces/<str:slug>/projects/<uuid:project_id>/issues/list/",
         IssueListEndpoint.as_view(),
+        name="project-issue",
+    ),
+     path(
+        #  "workspaces/<str:slug>/rag-issues/",
+        "workspaces/<str:slug>/projects/<uuid:project_id>/rag-issues/",
+        RagIssueListEndpoint.as_view(),
         name="project-issue",
     ),
     path(

@@ -149,6 +149,7 @@ class IssueAPIEndpoint(BaseAPIView):
         ).distinct()
 
     def get(self, request, slug, project_id, pk=None):
+        
         if pk:
             issue = Issue.issue_objects.annotate(
                 sub_issues_count=Issue.issue_objects.filter(

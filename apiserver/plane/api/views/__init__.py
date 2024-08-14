@@ -8,7 +8,7 @@ from .issue import (
     LabelAPIEndpoint,
     IssueLinkAPIEndpoint,
     IssueCommentAPIEndpoint,
-    IssueActivityAPIEndpoint,
+    IssueActivityAPIEndpoint
 )
 
 from .cycle import (

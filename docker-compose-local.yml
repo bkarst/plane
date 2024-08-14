@@ -104,43 +104,43 @@ services:
       - plane-db
       - plane-redis
 
-  worker:
-    build:
-      context: ./apiserver
-      dockerfile: Dockerfile.dev
-      args:
-        DOCKER_BUILDKIT: 1
-    restart: unless-stopped
-    networks:
-      - dev_env
-    volumes:
-      - ./apiserver:/code
-    command: ./bin/docker-entrypoint-worker.sh
-    env_file:
-      - ./apiserver/.env
-    depends_on:
-      - api
-      - plane-db
-      - plane-redis
+  # worker:
+  #   build:
+  #     context: ./apiserver
+  #     dockerfile: Dockerfile.dev
+  #     args:
+  #       DOCKER_BUILDKIT: 1
+  #   restart: unless-stopped
+  #   networks:
+  #     - dev_env
+  #   volumes:
+  #     - ./apiserver:/code
+  #   command: ./bin/docker-entrypoint-worker.sh
+  #   env_file:
+  #     - ./apiserver/.env
+  #   depends_on:
+  #     - api
+  #     - plane-db
+  #     - plane-redis
 
-  beat-worker:
-    build:
-      context: ./apiserver
-      dockerfile: Dockerfile.dev
-      args:
-        DOCKER_BUILDKIT: 1
-    restart: unless-stopped
-    networks:
-      - dev_env
-    volumes:
-      - ./apiserver:/code
-    command: ./bin/docker-entrypoint-beat.sh
-    env_file:
-      - ./apiserver/.env
-    depends_on:
-      - api
-      - plane-db
-      - plane-redis
+  # beat-worker:
+  #   build:
+  #     context: ./apiserver
+  #     dockerfile: Dockerfile.dev
+  #     args:
+  #       DOCKER_BUILDKIT: 1
+  #   restart: unless-stopped
+  #   networks:
+  #     - dev_env
+  #   volumes:
+  #     - ./apiserver:/code
+  #   command: ./bin/docker-entrypoint-beat.sh
+  #   env_file:
+  #     - ./apiserver/.env
+  #   depends_on:
+  #     - api
+  #     - plane-db
+  #     - plane-redis
 
   migrator:
     build:

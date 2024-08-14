@@ -106,6 +106,7 @@ from .issue.base import (
     IssueListEndpoint,
     IssueViewSet,
     IssueUserDisplayPropertyEndpoint,
+    RagIssueListEndpoint,
     BulkDeleteIssuesEndpoint,
 )
 

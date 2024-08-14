@@ -1,10 +1,13 @@
 # Python imports
 import json
-
+from io import StringIO
+import csv
 # Django imports
+from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.contrib.postgres.fields import ArrayField
 from django.core.serializers.json import DjangoJSONEncoder
+from openai import OpenAI
 from django.db.models import (
     Exists,
     F,
@@ -38,6 +41,9 @@ from plane.app.serializers import (
 from plane.bgtasks.issue_activites_task import issue_activity
 from plane.db.models import (
     Issue,
+    User,
+    State,
+    IssueAssignee,
     IssueAttachment,
     IssueLink,
     IssueProperty,
@@ -45,6 +51,7 @@ from plane.db.models import (
     IssueSubscriber,
     Project,
 )
+
 from plane.utils.grouper import (
     issue_group_values,
     issue_on_results,
@@ -59,6 +66,7 @@ from plane.utils.paginator import (
 from .. import BaseAPIView, BaseViewSet
 from plane.utils.user_timezone_converter import user_timezone_converter
 
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
 # Module imports
 
 
@@ -172,6 +180,164 @@ class IssueListEndpoint(BaseAPIView):
             )
         return Response(issues, status=status.HTTP_200_OK)
 
+class RagIssueListEndpoint(BaseAPIView):
+
+    permission_classes = [
+        ProjectEntityPermission,
+    ]
+
+    def get(self, request, slug, project_id):
+        
+        queryset = (
+            Issue.issue_objects.filter(
+                workspace__slug=slug, project_id=project_id
+            )
+            .filter(workspace__slug=self.kwargs.get("slug"))
+            .select_related("workspace", "project", "state", "parent")
+            .prefetch_related("assignees", "labels", "issue_module__module")
+            .annotate(cycle_id=F("issue_cycle__cycle_id"))
+            .annotate(
+                link_count=IssueLink.objects.filter(issue=OuterRef("id"))
+                .order_by()
+                .annotate(count=Func(F("id"), function="Count"))
+                .values("count")
+            )
+            .annotate(
+                attachment_count=IssueAttachment.objects.filter(
+                    issue=OuterRef("id")
+                )
+                .order_by()
+                .annotate(count=Func(F("id"), function="Count"))
+                .values("count")
+            )
+            .annotate(
+                sub_issues_count=Issue.issue_objects.filter(
+                    parent=OuterRef("id")
+                )
+                .order_by()
+                .annotate(count=Func(F("id"), function="Count"))
+                .values("count")
+            )
+        ).distinct()
+
+        filters = issue_filters(request.query_params, "GET")
+
+        order_by_param = request.GET.get("order_by", "-created_at")
+        issue_queryset = queryset.filter(**filters)
+        # Issue queryset
+        issue_queryset, _ = order_issue_queryset(
+            issue_queryset=issue_queryset,
+            order_by_param=order_by_param,
+        )
+
+        # Group by
+        group_by = request.GET.get("group_by", False)
+        sub_group_by = request.GET.get("sub_group_by", False)
+
+        # issue queryset
+        issue_queryset = issue_queryset_grouper(
+            queryset=issue_queryset,
+            group_by=group_by,
+            sub_group_by=sub_group_by,
+        )
+
+        if self.fields or self.expand:
+            issues = IssueSerializer(
+                queryset, many=True, fields=self.fields, expand=self.expand
+            ).data
+        else:
+            issues = issue_queryset.values(
+                "id",
+                "issue_assignee",
+                "description_stripped",
+                "name",
+                "state_id",
+                "sort_order",
+                "completed_at",
+                "estimate_point",
+                "priority",
+                "start_date",
+                "target_date",
+                "sequence_id",
+                "project_id",
+                "parent_id",
+                "cycle_id",
+                "module_ids",
+                "label_ids",
+                "assignee_ids",
+                "sub_issues_count",
+                "created_at",
+                "updated_at",
+                "created_by",
+                "updated_by",
+                "attachment_count",
+                "link_count",
+                "is_draft",
+                "archived_at",
+            )
+            datetime_fields = ["created_at", "updated_at"]
+            issues = user_timezone_converter(
+                issues, datetime_fields, request.user.user_timezone
+            )
+            print(issues)
+            issue_objects = []
+            for issue in issues:
+                # print(issue["description_stripped"])
+                
+                issue_id = "proj-" + str(issue["sequence_id"])
+                my_uuid = str(issue["issue_assignee"])
+                # print(my_uuid)
+                assignee = IssueAssignee.objects.all().filter(id=my_uuid)
+                my_user_id = assignee.first().assignee.id
+                user = User.objects.all().filter(id=my_user_id).first()
+                state = State.objects.all().filter(id=issue["state_id"]).first()
+                # print(state.name)
+                first_name = user.first_name
+                last_name = user.last_name
+                full_name = first_name + " " + last_name
+                
+                print(full_name)
+                issue["status"] = state.name
+                issue["issue_id"] = issue_id
+                issue["full_name"] = full_name
+                issue_object = {}
+                issue_object["status"] = state.name
+                issue_object["issue_id"] = issue_id
+                issue_object["assignee"] = full_name
+                issue_object["description"] = issue["description_stripped"]
+                issue_object["name"] = issue["name"]
+                issue_objects.append(issue_object)
+                print(issue_object)
+        csv_buffer = StringIO()
+    
+        if issue_objects:
+            # Create a CSV writer
+            writer = csv.DictWriter(csv_buffer, fieldnames=issues[0].keys())
+
+            # Write the header
+            writer.writeheader()
+
+            # Write the data
+            for issue in issues:
+                writer.writerow(issue)
+
+        # Get the CSV string
+        csv_string = csv_buffer.getvalue()
+        csv_buffer.close()
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "user", "content": csv_string + "\n\nThe above is a csv representation of a kanban board. Using this information, answer the following: Who has completed their tasks?"},
+            ]
+        )
+        print("")
+        print("")
+        print(response.choices[0].message.content)
+        print("")
+        print("")
+        print("")
+        print("")
+        return Response({"issues": issues, "csv_string": csv_string}, status=status.HTTP_200_OK)
 
 class IssueViewSet(BaseViewSet):
     def get_serializer_class(self):
@@ -232,6 +398,7 @@ class IssueViewSet(BaseViewSet):
 
     @method_decorator(gzip_page)
     def list(self, request, slug, project_id):
+        
         filters = issue_filters(request.query_params, "GET")
         order_by_param = request.GET.get("order_by", "-created_at")
 

@@ -37,6 +37,7 @@ from plane.utils.paginator import BasePaginator
 from plane.authentication.utils.host import user_ip
 from plane.bgtasks.user_deactivation_email_task import user_deactivation_email
 from plane.utils.host import base_host
+from plane.db.models import WorkspaceMember, Workspace, User
 
 
 class UserEndpoint(BaseViewSet):
@@ -48,6 +49,7 @@ class UserEndpoint(BaseViewSet):
 
     @cache_response(60 * 60)
     def retrieve(self, request):
+
         serialized_data = UserMeSerializer(request.user).data
         return Response(
             serialized_data,
